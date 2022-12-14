@@ -25,38 +25,38 @@ public class RegisterServiceImpl implements RegisterService {
     public Map<String, String> register(String username, String password, String confirmedPassword) {
         Map<String, String> map = new HashMap<>();
         if (username == null) {
-            map.put("error_message", "username cannot be null");
+            map.put("error_message", "Username cannot be empty");
             return map;
         }
 
         if (password == null || confirmedPassword == null) {
-            map.put("error_message", "password cannot be null");
+            map.put("error_message", "Password cannot be empty");
             return map;
         }
 
         username = username.trim();
         if (username.length() == 0) {
-            map.put("error_message", "user cannot be null");
+            map.put("error_message", "Username cannot be empty");
             return map;
         }
 
         if (password.length() == 0 || confirmedPassword.length() == 0) {
-            map.put("error_message", "password cannot be null");
+            map.put("error_message", "Password cannot be empty");
             return map;
         }
 
         if (username.length() > 100) {
-            map.put("error_message", "username length exceeds limit");
+            map.put("error_message", "Username length exceeds limit");
             return map;
         }
 
         if (password.length() > 100 || confirmedPassword.length() > 100) {
-            map.put("error_message", "password length exceeds limit");
+            map.put("error_message", "Password length exceeds limit");
             return map;
         }
 
         if (!password.equals(confirmedPassword)) {
-            map.put("error_message", "passwords do not match");
+            map.put("error_message", "Passwords don't match");
             return map;
         }
 
@@ -64,7 +64,7 @@ public class RegisterServiceImpl implements RegisterService {
         queryWrapper.eq("username", username);
         List<User> users = userMapper.selectList(queryWrapper);
         if (!users.isEmpty()) {
-            map.put("error_message", "username already exists");
+            map.put("error_message", "Username already exists");
             return map;
         }
 
