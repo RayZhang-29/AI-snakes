@@ -3,11 +3,12 @@ import { Snake } from "./Snake";
 import { Wall } from "./Wall";
 
 export class GameMap extends AcGameObject {
-    constructor(ctx, parent) {
+    constructor(ctx, parent, store) {
         super();
 
         this.ctx = ctx;
         this.parent = parent;
+        this.store = store;
         this.L = 0;
         
         // one odd, one even, prevent entering the same box at the same time
@@ -25,57 +26,12 @@ export class GameMap extends AcGameObject {
     
     }
 
-    // Flood Fill Algorithm
-    check_connectivity(map, sx, sy, tx, ty) {
-        if (sx == tx && sy == ty) return true;
-        map[sx][sy] = true;
-
-        let dx = [-1, 0, 1, 0], dy = [0, 1, 0, -1];
-        for (let i = 0; i < 4; i ++ ) {
-            let x = sx + dx[i], y = sy + dy[i];
-            if (!map[x][y] && this.check_connectivity(map, x, y, tx, ty))
-                return true;
-        }
-
-        return false;
-    }
-
     // map should be created in backend
     create_walls() {
-        new Wall(0, 0, this);
-        const hasWall = [];
+        const hasWall = this.store.state.pk.gamemap;
+
         for (let r = 0; r < this.rows; r ++ ) {
-            hasWall[r] = []
             for (let c = 0; c < this.cols; c ++ ) {
-                hasWall[r][c] = false;
-            }
-        }
-
-        // create walls surrounding map
-        for (let r = 0; r < this.rows; r ++ ) {
-            hasWall[r][0] = hasWall[r][this.cols - 1] = true;
-        }
-        for (let c = 0; c < this.cols; c ++ ) {
-            hasWall[0][c] = hasWall[this.rows - 1][c] = true;
-        }
-
-        // create inner random walls 
-        for (let i = 0; i < this.inner_wall_count / 2; i ++ ) {
-            for (let j = 0; j < 1000; j ++ ) {
-                let r = parseInt(Math.random() * this.rows);
-                let c = parseInt(Math.random() * this.cols);
-                if (hasWall[r][c] || hasWall[this.rows - 1 - r][this.cols - 1 - c]) continue;
-                if (r == this.rows - 2 && c == 1 || r == 1 && this.cols - 2) continue;
-                hasWall[r][c] = hasWall[this.rows - 1 - r][this.cols - 1 - c] = true;
-                break;
-            }
-        }
-
-        const copy_map = JSON.parse(JSON.stringify(hasWall));
-        if (!this.check_connectivity(copy_map, this.rows - 2, 1, 1, this.cols - 2)) return false;
-
-        for (let r = 0; r < this.rows; r ++ ) {
-            for (let c = 0; c <this.cols; c ++ ) {
                 if (hasWall[r][c]) {
                     this.walls.push(new Wall(r, c, this));
                 }
@@ -90,7 +46,7 @@ export class GameMap extends AcGameObject {
 
         const [snake0, snake1] = this.snakes;
         this.ctx.canvas.addEventListener("keydown", e => {
-            if (e.key == 'w') snake0.set_direction(0);
+            if (e.key === 'w') snake0.set_direction(0);
             else if (e.key === 'd') snake0.set_direction(1);
             else if (e.key === 's') snake0.set_direction(2);
             else if (e.key === 'a') snake0.set_direction(3);
@@ -102,10 +58,7 @@ export class GameMap extends AcGameObject {
     }
 
     start() {
-        for (let i = 0; i < 1000; i ++ ) {
-            if (this.create_walls()) break;
-        }
-
+        this.create_walls();
         this.add_listening_events();
     }
 
@@ -132,7 +85,7 @@ export class GameMap extends AcGameObject {
 
     check_valid(cell) { // check if the position is valid: not crash the snakes' bodies or walls
         for (const wall of this.walls) { // for loop: in--index, of--value
-            if (wall.r === cell.r && wall.c == cell.c) return false; 
+            if (wall.r === cell.r && wall.c === cell.c) return false; 
         }
 
         for (const snake of this.snakes) {
@@ -143,8 +96,9 @@ export class GameMap extends AcGameObject {
             for (let i = 0; i < k; i ++ ) {
                 if (snake.cells[i].r === cell.r && snake.cells[i].c === cell.c) return false;
             }
-            return true;
+            // return true;
         }
+        return true;
     }
 
     update() {
