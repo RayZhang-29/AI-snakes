@@ -1,9 +1,11 @@
 package com.AI_snakes.backend.consumer.utils;
 
 import com.AI_snakes.backend.consumer.WebSocketServer;
+import com.AI_snakes.backend.pojo.Record;
 import com.alibaba.fastjson2.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.locks.ReentrantLock;
@@ -19,7 +21,7 @@ public class Game extends Thread {
     private Integer nextStepB = null;
     private ReentrantLock lock = new ReentrantLock();
     private String status = "playing"; // playing => finished
-    private String loser = ""; // all: tie  a: a loses, b: b loses
+    private String loser = "none"; // all: tie  a: a loses, b: b loses
 
 
     public Game(Integer rows, Integer cols, Integer inner_walls_count, Integer idA, Integer idB) {
@@ -143,10 +145,59 @@ public class Game extends Thread {
         return false;
     }
 
+    private void judge() {
+        List<Cell> cellsA = playerA.getCells();
+        List<Cell> cellsB = playerB.getCells();
+
+        boolean validA = check_valid(cellsA, cellsB);
+        boolean validB = check_valid(cellsB, cellsA);
+        if (!validA || !validB) {
+            status = "finished";
+
+            if (!validA && !validB) {
+                loser = "all";
+            } else if (!validA) {
+                loser = "A";
+            } else {
+                loser = "B";
+            }
+        }
+    }
+
+    private String getMapString() {
+        StringBuilder res = new StringBuilder();
+        for (int i = 0; i < rows; i ++ ) {
+            for (int j = 0; j < cols; j ++ ) {
+                res.append(hasWall[i][j]);
+            }
+        }
+        return res.toString();
+    }
+
+
+    private void saveToDatabase() {
+        Record record = new Record(
+                null,
+                playerA.getId(),
+                playerA.getSx(),
+                playerA.getSy(),
+                playerB.getId(),
+                playerB.getSx(),
+                playerB.getSy(),
+                playerA.getStepsString(),
+                playerB.getStepsString(),
+                getMapString(),
+                loser,
+                new Date()
+        );
+        WebSocketServer.recordMapper.insert(record);
+    }
+
     private void sendResult() { // send results to the two clients
         JSONObject resp = new JSONObject();
         resp.put("event", "result");
         resp.put("loser", loser);
+        saveToDatabase();
         sendAllMessage(resp.toJSONString());
     }
 
@@ -184,24 +235,6 @@ public class Game extends Thread {
         return true;
     }
 
-    private void judge() {
-        List<Cell> cellsA = playerA.getCells();
-        List<Cell> cellsB = playerB.getCells();
-
-        boolean validA = check_valid(cellsA, cellsB);
-        boolean validB = check_valid(cellsB, cellsA);
-        if (!validA || !validB) {
-            status = "finished";
-
-            if (!validA && !validB) {
-                loser = "all";
-            } else if (!validA) {
-                loser = "A";
-            } else {
-                loser = "B";
-            }
-        }
-    }
 
     private void sendAllMessage(String message) {
         WebSocketServer.users.get(playerA.getId()).sendMessage(message);

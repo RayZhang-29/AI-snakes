@@ -2,6 +2,7 @@ package com.AI_snakes.backend.consumer;
 
 import com.AI_snakes.backend.consumer.utils.Game;
 import com.AI_snakes.backend.consumer.utils.JwtAuthentication;
+import com.AI_snakes.backend.mapper.RecordMapper;
 import com.AI_snakes.backend.mapper.UserMapper;
 import com.AI_snakes.backend.pojo.User;
 import com.alibaba.fastjson2.JSONObject;
@@ -26,11 +27,17 @@ public class WebSocketServer {
     private Session session = null;
     // not single instance?
     private static UserMapper userMapper;
+    public static RecordMapper recordMapper;
     private Game game = null;
 
     @Autowired
     public void setUserMapper(UserMapper userMapper) {
         WebSocketServer.userMapper = userMapper;
+    }
+
+    @Autowired
+    public void setRecordMapper(RecordMapper recordMapper) {
+        WebSocketServer.recordMapper = recordMapper;
     }
 
     @OnOpen
